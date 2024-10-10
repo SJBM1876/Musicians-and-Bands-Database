@@ -69,4 +69,10 @@ describe('Band, Musician, and Song Models', () => {
         const foundSong = await Song.findOne({ where: { title: 'Bohemian Rhapsody' } });
         expect(foundSong).toBeNull();
     })
+
+    test('can associate Band and Musician', async () => {
+        // Create bands
+        const band1 = await Band.create({ name: 'The Beatles', genre: 'Rock' });
+        const band2 = await Band.create({ name: 'Queen', genre: 'Rock' });
+    })
 })
