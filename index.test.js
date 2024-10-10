@@ -2,13 +2,7 @@ const { sequelize } = require('./db');
 const { Band, Musician, Song } = require('./index')
 
 describe('Band, Musician, and Song Models', () => {
-    /**
-     * Runs the code prior to all tests
-     */
     beforeAll(async () => {
-        // the 'sync' method will create tables based on the model class
-        // by setting 'force:true' the tables are recreated each time the 
-        // test suite is run
         await sequelize.sync({ force: true });
     })
 
@@ -70,9 +64,63 @@ describe('Band, Musician, and Song Models', () => {
         expect(foundSong).toBeNull();
     })
 
-    test('can associate Band and Musician', async () => {
+    test('can associate Band and Song', async () => {
         // Create bands
         const band1 = await Band.create({ name: 'The Beatles', genre: 'Rock' });
         const band2 = await Band.create({ name: 'Queen', genre: 'Rock' });
-    })
+
+        // Create songs
+        const song1 = await Song.create({ title: 'Hey Jude', year: 1968, length: 431 });
+        const song2 = await Song.create({ title: 'Bohemian Rhapsody', year: 1975, length: 355 });
+
+        // Associate songs with bands
+        await band1.addSong(song1);
+        await band1.addSong(song2);
+        await band2.addSong(song2);
+
+        // Check associations for band1 (The Beatles)
+        const beatlesSongs = await band1.getSongs();
+        expect(beatlesSongs.length).toBe(2);
+        expect(beatlesSongs.map(s => s.title).sort()).toEqual(['Hey Jude', 'Bohemian Rhapsody'].sort());
+
+        // Check associations for band2 (Queen)
+        const queenSongs = await band2.getSongs();
+        expect(queenSongs.length).toBe(1);
+        expect(queenSongs[0].title).toBe('Bohemian Rhapsody');
+
+        // Check associations for song2 (Bohemian Rhapsody)
+        const bohemianRhapsodyBands = await song2.getBands();
+        expect(bohemianRhapsodyBands.length).toBe(2);
+        expect(bohemianRhapsodyBands.map(b => b.name).sort()).toEqual(['The Beatles', 'Queen'].sort());
+    });
+
+    test('can add multiple musicians to a band', async () => {
+        // Create a band
+        const band = await Band.create({ name: 'Led Zeppelin', genre: 'Rock' });
+
+        // Create musicians
+        const musician1 = await Musician.create({ name: 'Robert Plant', instrument: 'Vocals' });
+        const musician2 = await Musician.create({ name: 'Jimmy Page', instrument: 'Guitar' });
+        const musician3 = await Musician.create({ name: 'John Bonham', instrument: 'Drums' });
+
+        // Add musicians to the band
+        await band.addMusicians([musician1, musician2, musician3]);
+
+        // Check that musicians were added correctly
+        const bandMusicians = await band.getMusicians();
+        expect(bandMusicians.length).toBe(3);
+        expect(bandMusicians.map(m => m.name).sort()).toEqual(['Robert Plant', 'Jimmy Page', 'John Bonham'].sort());
+
+        // Create songs
+        const song1 = await Song.create({ title: 'Stairway to Heaven', year: 1971, length: 482 });
+        const song2 = await Song.create({ title: 'Kashmir', year: 1975, length: 508 });
+
+        // Add songs to the band
+        await band.addSongs([song1, song2]);
+
+        // Check that songs were added correctly
+        const bandSongs = await band.getSongs();
+        expect(bandSongs.length).toBe(2);
+        expect(bandSongs.map(s => s.title).sort()).toEqual(['Stairway to Heaven', 'Kashmir'].sort());
+    });
 })
